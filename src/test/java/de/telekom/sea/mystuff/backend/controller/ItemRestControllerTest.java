@@ -1,12 +1,11 @@
 package de.telekom.sea.mystuff.backend.controller;
 
+//  import static importiert einzelne Methoden
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,7 @@ import de.telekom.sea.mystuff.backend.repository.ItemRepository;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class ItemRestControllerTest {
 	
-	private static final String BASE_PATH = "/api/v1/items";
+	private static final String BASE_PATH = "/api/v1/items"; // die URI ist im RestTemplate drin
 	
 	@Autowired
 	private TestRestTemplate restTemplate;
@@ -49,6 +48,12 @@ class ItemRestControllerTest {
 		ResponseEntity<Item> response = restTemplate.postForEntity(BASE_PATH, lawnMover, Item.class);
 		// Then | Assert
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+		
+		lawnMover.setId(response.getBody().getId());
+		assertThat(response.getBody()).isEqualToComparingFieldByField(lawnMover);
+		
+		assertThat(response.getBody()).isEqualToComparingOnlyGivenFields(lawnMover, "name", "amount", "location", "description", "lastUsed");
+		
 	}
 	
 
@@ -59,9 +64,11 @@ class ItemRestControllerTest {
 		generateAndPostAnItem();
 		generateAndPostAnItem();
 		// When | Act
-		ResponseEntity<List> response = restTemplate.getForEntity(BASE_PATH, List.class);
+		//ResponseEntity<List> response = restTemplate.getForEntity(BASE_PATH, List.class); //List.class und List<Item>.class wäre derselbe Typ
+		ResponseEntity<Item[]> response = restTemplate.getForEntity(BASE_PATH, Item[].class);
 		// Then | Assert
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().length == 3);
 	}
 	
 	
@@ -137,7 +144,7 @@ class ItemRestControllerTest {
 	@Test 
 	void shouldNotBeAbleToReplaceAnItemWithUnknownId() throws URISyntaxException {
 		// Give | Arrange
-		// Item insertedItem = generateAndPostAnItem(); -> nicht notwendig
+		// Item insertedItem = generateAndPostAnItem();//-> nicht notwendig
 		Item newItem = newTractor();
 		// When | Act
 		RequestEntity<Item> requestEntity = new RequestEntity<>(newItem, HttpMethod.PUT,
